@@ -1,41 +1,116 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+# from operator import attrgetter
 from collections import namedtuple
-Item = namedtuple("Item", ['index', 'value', 'weight'])
+KnapsackItem = namedtuple("KnapsackItem", ['index', 'value', 'weight'])
 
-def solve_it(input_data):
-    # Modify this code to run your optimization algorithm
+class Knapsack:
+    items = []
+    capacity = 0
+    itemsCount = 0
+    matrix = []
+    chosenItems = []
 
-    # parse the input
+    def __init__(self):
+        self.items = []
+        self.capacity = 0
+        self.itemsCount = 0
+        self.matrix = []
+        self.chosenItems = []
+
+    def createMatrix(self):
+        self.matrix = [0] * (self.capacity + 1)
+        for i in range(self.capacity + 1):
+            self.matrix[i] = [0] * (len(self.items) + 1)
+
+    def createChosenItemsArray(self):
+        self.chosenItems = [0] * self.itemsCount
+
+    def solveKnapsack(self):
+        if(self.matrix == []):
+            self.createMatrix()
+        nrows = len(self.matrix)
+        ncols = len(self.matrix[0])
+
+        for col in range(1, ncols):
+            for row in range(1, nrows):
+                itemWeight = self.items[col-1].weight
+                itemValue = self.items[col-1].value
+                actualCapacity = row
+
+                if(itemWeight <= actualCapacity):
+                    self.matrix[row][col] = max(self.matrix[row][col-1], itemValue + self.matrix[row-itemWeight][col-1])
+                else:
+                    self.matrix[row][col] = self.matrix[row][col-1]
+
+    def getValue(self):
+        nrows = len(self.matrix)
+        ncols = len(self.matrix[0])       
+
+        return self.matrix[nrows-1][ncols-1]
+
+    def printMatrix(self):
+        nrows = len(self.matrix)
+        ncols = len(self.matrix[0])
+
+        for i in range(nrows):
+            for j in range(ncols):
+                print(str(self.matrix[i][j]) + " ", end="")
+            print()
+
+    def traceBack(self):
+        if(self.chosenItems == []):
+            self.createChosenItemsArray()
+        
+        row = len(self.matrix) - 1
+        col = len(self.matrix[0]) - 1
+
+        for i in range(len(self.matrix[0]) - 1):
+            value = self.matrix[row][col]
+            prevValue = self.matrix[row][col - 1]
+
+            if(value != prevValue):
+                self.chosenItems[col - 1] = 1
+                row = row - self.items[col - 1].weight
+
+            col = col - 1    
+
+    def prinTraceBack(self):
+        self.traceBack()
+
+        for i in range(len(self.chosenItems)):
+            print(str(self.chosenItems[i]) + " ", end = "")
+        print()
+
+def readItems(input_data, _knapsack):
+
+    # store all the file lines
     lines = input_data.split('\n')
 
+    # The first line contains the number of items and the knapsack capacity
     firstLine = lines[0].split()
-    item_count = int(firstLine[0])
-    capacity = int(firstLine[1])
+    _knapsack.itemsCount = int(firstLine[0])
+    _knapsack.capacity = int(firstLine[1])
 
-    items = []
-
-    for i in range(1, item_count+1):
+    for i in range(1, _knapsack.itemsCount + 1):
         line = lines[i]
-        parts = line.split()
-        items.append(Item(i-1, int(parts[0]), int(parts[1])))
+        # each line contains an object with the format "value" and "weight"
+        knapsackObject = line.split()
+        _knapsack.items.append(KnapsackItem(i-1, int(knapsackObject[0]), int(knapsackObject[1])))
 
-    # a trivial greedy algorithm for filling the knapsack
-    # it takes items in-order until the knapsack is full
-    value = 0
-    weight = 0
-    taken = [0]*len(items)
+    # _knapsack.items = sorted(_knapsack.items, key=attrgetter('weight'))
 
-    for item in items:
-        if weight + item.weight <= capacity:
-            taken[item.index] = 1
-            value += item.value
-            weight += item.weight
-    
-    # prepare the solution in the specified output format
-    output_data = str(value) + ' ' + str(0) + '\n'
-    output_data += ' '.join(map(str, taken))
+def solve_it(input_data):
+
+    _knapsack = Knapsack()
+
+    readItems(input_data, _knapsack)
+    _knapsack.solveKnapsack()
+    _knapsack.traceBack()
+
+    output_data = str(_knapsack.getValue()) + ' ' + str(0) + '\n'
+    output_data += ' '.join(map(str, _knapsack.chosenItems))
+
     return output_data
 
 
